@@ -15,10 +15,10 @@ import java.util.List;
 public class nodesAdapter extends RecyclerView.Adapter<MyViewHolder> {
 
     private static final String TAG = "NodesAdapter";
-    private List<displaynote> noteList;
+    private List<share> noteList;
     private MainActivity mainAct;
 
-    public nodesAdapter(List<displaynote> nList, MainActivity ma){
+    public nodesAdapter(List<share> nList, MainActivity ma){
         this.noteList=nList;
         this.mainAct=ma;
     }
@@ -37,7 +37,7 @@ public class nodesAdapter extends RecyclerView.Adapter<MyViewHolder> {
 
     @Override
     public void onBindViewHolder(MyViewHolder holder, int position) {
-        displaynote note = noteList.get(position);
+        share note = noteList.get(position);
         holder.tvTime.setText(note.getName());
         if (note.getDescription().length()<80){
             holder.etNode.setText(note.getDescription());

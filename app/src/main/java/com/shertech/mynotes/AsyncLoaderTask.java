@@ -14,7 +14,7 @@ import java.io.InputStreamReader;
  * Created by lastwalker on 2/22/17.
  */
 
-public class AsyncLoaderTask extends AsyncTask<String,Void,String> {
+public class AsyncLoaderTask extends AsyncTask<share,Void,share> {
 
     private static final String TAG = "AsyncLoaderTask";
     private eNode eNActivity;
@@ -36,13 +36,7 @@ public class AsyncLoaderTask extends AsyncTask<String,Void,String> {
     }*/
 
     @Override
-    protected void onPostExecute(String s) {
-        eNActivity.setMSP(msp);
-    }
-
-    @Override
-    protected String doInBackground(String... params) {
-
+    protected share doInBackground(share... params) {
         Log.d(TAG, "loadFile: Loading JSON File");
         try {
             InputStream is = eNActivity.openFileInput(eNActivity.getString(R.string.file_name));
@@ -50,38 +44,19 @@ public class AsyncLoaderTask extends AsyncTask<String,Void,String> {
             reader.beginObject();
             while (reader.hasNext()) {
                 String name = reader.nextName();
-                if (name.equals("fname")) {
-                    msp.setFname(reader.nextInt());
+                if (name.equals("etTitle")) {
+                    msp.setTitle(reader.nextString());
+                }else if (name.equals("etNode")) {
+                    msp.setDescription(reader.nextString());}
+                else if (name.equals("compare")) {
+                    msp.setCompare(reader.nextString());}
+                else if (name.equals("tvTime")) {
+                    msp.setName(reader.nextString());
                 }else{
                     reader.skipValue();
                 }
-
             }
             reader.endObject();
-            n=msp.getFname();
-            if (n!=999999){
-                is = eNActivity.openFileInput(eNActivity.getString(R.string.file_name));
-                reader = new JsonReader(new InputStreamReader(is, eNActivity.getString(R.string.encoding)));
-                reader.beginObject();
-                while (reader.hasNext()) {
-                    String name = reader.nextName();
-                    if (name.equals("etTitle"+n)) {
-                        msp.setTitle(reader.nextString());
-                    }else if (name.equals("etNode"+n)) {
-                        msp.setDescription(reader.nextString());}
-                    else if (name.equals("compare"+n)) {
-                        msp.setCompare(reader.nextString());}
-                    else if (name.equals("tvTime"+n)) {
-                        msp.setName(reader.nextString());
-                    }else{
-                        reader.skipValue();
-                    }
-                }
-                reader.endObject();
-            }else{
-                Toast.makeText(eNActivity,R.string.no_file,Toast.LENGTH_SHORT);
-            }
-
         } catch (FileNotFoundException e) {
             Toast.makeText(eNActivity, eNActivity.getString(R.string.no_file), Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
@@ -89,4 +64,10 @@ public class AsyncLoaderTask extends AsyncTask<String,Void,String> {
         }
         return null;
     }
+
+    @Override
+    protected void onPostExecute(share s) {
+        eNActivity.setMSP(msp);
+    }
+
 }

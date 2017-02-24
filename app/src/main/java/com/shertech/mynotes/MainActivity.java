@@ -4,6 +4,7 @@ import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -16,10 +17,15 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.Toast;
+
+import org.json.JSONObject;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -30,14 +36,11 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, View.OnLongClickListener{
 
-    private List<displaynote> noteList = new ArrayList<>();  // Main content is here
+    public List<share> noteList = new ArrayList<>();  // Main content is here
     private RecyclerView recyclerView; // Layout's recyclerview
     private nodesAdapter nAdapter; // Data to recyclerview adapter
-    share s;
-    displaynote d;
-    private int n=0;
-    String prev="@&@$";
-    int B_REQ,x;
+    //share s;
+    //displaynote d;
     share msp;
     private static final String TAG = "MainActivity";
 
@@ -55,8 +58,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         recyclerView.setAdapter(nAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        d=new displaynote();
-        msp=new share();
+        //d=new displaynote();
+        Intent intent = getIntent();
+        if (intent.hasExtra(share.class.getName())) {
+            msp = (share) intent.getSerializableExtra(share.class.getName());
+        }
 
         builder = new AlertDialog.Builder(this);
         builder.setMessage(R.string.dinfo);
@@ -67,6 +73,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return;
             }
         });
+        if (noteList.size()==0&&msp!=null){
+            new MyAsyncTask(this).execute();
+            noteList.add(0,msp);
+            nAdapter.notifyDataSetChanged();
+        }else {
+            List<share> flag=noteList;
+            new MyAsyncTask(this).execute();
+            if(msp!=null&&flag.size()!=0){
+            for(share x:flag){
+                noteList.add(0,x);
+            }
+            noteList.add(0,msp);
+            nAdapter.notifyDataSetChanged();}
+            else{
+                if(msp!=null){
+                    noteList.add(0,msp);
+                    nAdapter.notifyDataSetChanged();
+                }else{
+                    Log.d(TAG, "onCreate:ADSAD");
+                }
+            }
+        }
+
+
     }
 
     @Override
@@ -79,7 +109,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onResume() {
         super.onResume();
-        s=loadFile();
 
     }
 
@@ -89,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (item.getItemId()) {
             case R.id.addNote:
                 Toast.makeText(this, "new note created", Toast.LENGTH_SHORT).show();
-                Intent in = new Intent(MainActivity.this, eNode.class).putExtra(share.class.getName(),msp);
+                Intent in = new Intent(MainActivity.this, eNode.class).putExtra(share.class.getName(),new share());
                 startActivity(in);
                 return true;
             case R.id.dinfo:
@@ -99,55 +128,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             default:
                 return super.onOptionsItemSelected(item);
         }
-    }
-    private share loadFile(){
-        Log.d(TAG, "maloadFile: Loading JSON File");
-
-        try {
-            InputStream ss = getApplicationContext().openFileInput("count.json");
-            JsonReader r = new JsonReader(new InputStreamReader(ss,getString(R.string.encoding)));
-            r.beginObject();
-            while (r.hasNext()){
-                String n = r.nextName();
-                if(n.equals("counter")){
-                    x=B_REQ=r.nextInt();
-                }else{
-                    r.skipValue();
-                }
-            }r.endObject();
-            r.close();
-            ss.close();
-            for (int i = 0;i<=B_REQ;i++){
-                InputStream is = getApplicationContext().openFileInput(getString(R.string.file_name));
-                JsonReader reader = new JsonReader(new InputStreamReader(is, getString(R.string.encoding)));
-                reader.beginObject();
-                while (reader.hasNext()) {
-                    String name = reader.nextName();
-                    if (name.equals("etTitle"+i)) {
-                        d.setTitle(reader.nextString());
-                    }else if (name.equals("etNode"+i)) {
-                        d.setDescription(reader.nextString());}
-                    else if (name.equals("tvTime"+i)) {
-                        d.setName(reader.nextString());
-                    }else{
-                        reader.skipValue();
-                    }
-                }
-
-                reader.endObject();
-                if (d.getTitle()!="" &&d.getTitle()!=prev) {
-                    noteList.add(d);
-                    nAdapter.notifyDataSetChanged();
-                    prev=d.getTitle();
-                }
-            }
-
-        } catch (FileNotFoundException e) {
-            Toast.makeText(this, getString(R.string.no_file), Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return s;
     }
 
     @Override
@@ -164,21 +144,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public boolean onLongClick(View v) {
         int pos = recyclerView.getChildLayoutPosition(v);
-        displaynote d = noteList.get(pos);
-        Toast.makeText(v.getContext(), "LONG " + d.toString(), Toast.LENGTH_SHORT).show();
+        share msp = noteList.get(pos);
+        Toast.makeText(v.getContext(), "LONG " + msp.toString(), Toast.LENGTH_SHORT).show();
         return false;
+    }
+    public void setNoteList(List<share> NL){
+        noteList=NL;
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-
-        if(B_REQ==0 || B_REQ==x){
-            return;
-        }else{
-            saveProduct();
-        }
-
+        saveProduct();
     }
 
    /* @Override
@@ -197,19 +174,118 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void saveProduct() {
         Log.d(TAG, "saveProduct: Saving JSON File");
         try {
-            FileOutputStream fos = getApplicationContext().openFileOutput("count.json", Context.MODE_PRIVATE);
+            FileOutputStream fos = getApplicationContext().openFileOutput(getString(R.string.file_name)+"1", Context.MODE_PRIVATE);
+            if(noteList!=null){
+                if(noteList.size()!=0){
+                    writeJsonStream(fos,noteList);
+                }else {
+                    Toast.makeText(this, getString(R.string.no_file), Toast.LENGTH_SHORT).show();
+                }
 
-            JsonWriter writer = new JsonWriter(new OutputStreamWriter(fos, getString(R.string.encoding)));
-            writer.setIndent(" ");
-            writer.beginObject();
-            writer.name("counter").value(B_REQ);
-            writer.name("prev").value(prev);
-            writer.endObject();
-            writer.close();
-
-            Toast.makeText(this, getString(R.string.count), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.count), Toast.LENGTH_SHORT).show();}
+            else {
+                Log.d(TAG, "saveProduct: ");
+            }
         } catch (Exception e) {
             e.getStackTrace();
         }
     }
+    public void writeJsonStream(FileOutputStream out, List<share> noteList) throws IOException {
+            Log.d(TAG, "writeJsonStream: ");
+            JsonWriter writer = new JsonWriter(new OutputStreamWriter(out, getString(R.string.encoding)));
+            writer.setIndent("  ");
+            writeNoteArray(writer, noteList);
+            writer.close();
+    }
+
+    public void writeNoteArray(JsonWriter writer, List<share> noteList) throws IOException {
+            Log.d(TAG, "writeNoteArray: ");
+            writer.beginArray();
+            for (share note : noteList) {
+                writeNote(writer, note);
+            }
+            writer.endArray();
+    }
+
+    public void writeNote(JsonWriter writer, share note) throws IOException {
+        writer.beginObject();
+        writer.name("Title").value(note.getTitle());
+        writer.name("Name").value(note.getName());
+        writer.name("Description").value(note.getDescription());
+        writer.endObject();
+        Log.d(TAG, "writeNote: ");
+    }
+    class MyAsyncTask extends AsyncTask<List<share>,Void,List<share>> {
+        MainActivity ma;
+        List<share> NL;
+
+
+        MyAsyncTask(MainActivity ma) {
+            this.ma = ma;
+        }
+
+        @Override
+        protected List<share> doInBackground(List<share>... params) {
+            Log.d(TAG, "maloadFile: Loading JSON File");
+
+            try {
+                InputStream ss = getApplicationContext().openFileInput(getString(R.string.file_name) + "1");
+                NL = readJsonStream(ss);
+
+            } catch (FileNotFoundException e) {
+                Toast.makeText(ma.getApplicationContext(), getString(R.string.no_file), Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return NL;
+        }
+
+        public List<share> readJsonStream(InputStream in) throws IOException {
+            Log.d(TAG, "readJsonStream: ");
+            JsonReader reader = new JsonReader(new InputStreamReader(in, getString(R.string.encoding)));
+            try {
+                return readNoteArray(reader);
+            } finally {
+                reader.close();
+            }
+        }
+
+        public List<share> readNoteArray(JsonReader reader) throws IOException {
+            Log.d(TAG, "readNoteArray: ");
+            List<share> nL = new ArrayList<>();
+
+            reader.beginArray();
+            while (reader.hasNext()) {
+                nL.add(readMessage(reader));
+            }
+            reader.endArray();
+            return nL;
+        }
+        @Override
+        protected void onPostExecute(List<share> shares) {
+            ma.setNoteList(shares);
+        }
+
+        public share readMessage(JsonReader reader) throws IOException {
+            Log.d(TAG, "readMessage: ");
+            share s = new share();
+
+            reader.beginObject();
+            while (reader.hasNext()) {
+                String name = reader.nextName();
+                if (name.equals("name")) {
+                    s.setName(reader.nextString());
+                } else if (name.equals("Title")) {
+                    s.setTitle(reader.nextString());
+                } else if (name.equals("Description")) {
+                    s.setDescription(reader.nextString());
+                } else {
+                    reader.skipValue();
+                }
+            }
+            reader.endObject();
+            return s;
+        }
+    }
+
 }
