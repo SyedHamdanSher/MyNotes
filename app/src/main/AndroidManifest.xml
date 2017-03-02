@@ -15,7 +15,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".eNode"></activity>
+        <activity android:name=".eNode" />
+        <activity android:name=".ApplicationInformation"></activity>
     </application>
 
 </manifest>

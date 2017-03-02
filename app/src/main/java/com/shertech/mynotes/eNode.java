@@ -1,6 +1,7 @@
 package com.shertech.mynotes;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -22,6 +23,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
@@ -30,15 +32,17 @@ public class eNode extends AppCompatActivity {
     TextView tvTime;
     EditText etNote;
     EditText etTitle;
-    share msp;
+    private share msp;
+    private String a, b,time;
     Calendar calendar;
     String title;
-    static int n=999999,x=99999;
+    private static final int B_REQ = 1;
     SimpleDateFormat simpleDateFormat;
     private static final String TAG = "eNode";
     Button btClear;
-    AlertDialog dialog;
-    AlertDialog.Builder builder;
+    String Initial,Initiale;
+    private static final int RESULT = 2;
+    private static int Flag=1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,52 +61,64 @@ public class eNode extends AppCompatActivity {
         title = etTitle.getText().toString();
         Intent intent = getIntent();
         if (intent.hasExtra(share.class.getName())) {
-            msp = (share) intent.getSerializableExtra(share.class.getName());}
-        calendar = Calendar.getInstance();
+            msp = (share) intent.getSerializableExtra(share.class.getName());
+            Initial = msp.getTitle();
+            Initiale = msp.getDescription();
+
+            if(msp!=null ) {
+
+                a = new String(msp.getTitle());
+                b = new String(msp.getDescription());
+                //Log.d(TAG, "onCreate: "+tC+" - "+msp.getTitle()+" "+nC+" - "+ msp.getQuickNotes());
+            }
+        }
+        /*calendar = Calendar.getInstance();
         simpleDateFormat = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
         Log.d(TAG, "onCreate: ");
-        if (msp==null){
-            doAsyncLoad();
-            if (msp != null) { // null means no file was loaded
-                if(msp.getTitle()!=null && !msp.getTitle().matches("") || !etTitle.getText().toString().matches("")) {
-                /*if(x== msp.getFname() && x!=99999){
-                n=msp.getFname();}
-                else{
-                    n=x;
-                }*/
-                    tvTime.setText(msp.getName());
-                    etNote.setText(msp.getDescription());
-                    etTitle.setText(msp.getTitle());
-                    title = etTitle.getText().toString();
-                }else {
-                    calendar = Calendar.getInstance();
-                    tvTime.setText(simpleDateFormat.format(calendar.getTime()));
-                }
-
-            }
-            Log.d(TAG, "oncreateResume: ");
-        }else{
-            tvTime.setText(msp.getName());
-            etNote.setText(msp.getDescription());
-            etTitle.setText(msp.getTitle());
-            title = etTitle.getText().toString();
-        }
+        //doAsyncLoad();*/
     }
-    private void doAsyncLoad() {
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (msp != null) {
+            etTitle.setText(msp.getTitle());
+            if(msp.getTitle().length()>0) {
+                etTitle.setSelection(msp.getTitle().length());
+            }
+            etNote.setText(msp.getDescription());
+            tvTime.setText(msp.getName());
+            if(msp.getDescription().length()>0) {
+                etNote.setSelection(msp.getDescription().length());
+            }
+        }
+        Log.d(TAG, "onResume: ");
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+
+        outState.putString("Initial",Initial);
+        outState.putString("Initiale",Initiale);
+        super.onSaveInstanceState(outState);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        Initial=savedInstanceState.getString("Initial");
+        Initiale=savedInstanceState.getString("Initiale");
+    }
+    /*private void doAsyncLoad() {
         AsyncLoaderTask alt = new AsyncLoaderTask(this,msp);
         alt.execute();
-    }
-
-    protected void setMSP(share s){
-        msp=s;
-    }
-
-    /*public void clear(View view){
-        etNote.setText("");
-        msp.setDescription(etNote.getText().toString());
-        msp.setCompare("");
-        saveProduct();
     }*/
+
+    //public void setMSP(share s){
+    //  msp=s;
+    //}
+
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -115,7 +131,24 @@ public class eNode extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.saveNoteIC:
-                CHECK();
+                if(!(a.equals(etTitle.getText().toString())&&b.equals(etNote.getText().toString()))) {
+                    msp.setTitle(etTitle.getText().toString());
+                    msp.setDescription(etNote.getText().toString());
+                    DateFormat df = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
+                    String date = df.format(Calendar.getInstance().getTime());
+                    msp.setName(date);
+                }/*else if(!etTitle.getText().toString().equals("")){
+                    msp.setTitle(etTitle.getText().toString());
+                    msp.setDescription(etNote.getText().toString());
+                    DateFormat df = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
+                    String date = df.format(Calendar.getInstance().getTime());
+                    msp.setName(date);
+                }*/
+                Intent data = new Intent();
+                data.putExtra("USER_TEXT", msp);
+                setResult(RESULT, data);
+                //startActivity(data);
+                finish();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -125,126 +158,61 @@ public class eNode extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        if (msp.getTitle()!=null && !msp.getTitle().matches("")&& !etTitle.getText().toString().matches("")){
-            if(!(msp.getDescription().matches(msp.getCompare())) || !etNote.getText().toString().matches(msp.getDescription()) || !etTitle.getText().toString().matches(msp.getTitle())){
-                calendar = Calendar.getInstance();
-                msp.setName(simpleDateFormat.format(calendar.getTime()));
-                msp.setDescription(etNote.getText().toString());
-                msp.setCompare(etNote.getText().toString());
-                msp.setTitle(etTitle.getText().toString());
-                /*if(n==999999){
-                msp.setFname(x);}
-                else {
-                    msp.setFname(n);
-                }*/
-                saveProduct();
-            }
-            else{
-                Log.d(TAG, "onPause: ");
-            }
-        }
-        else{
-            if (!etTitle.getText().toString().matches("") ||!etTitle.getText().toString().matches(msp.getTitle())){
-                calendar = Calendar.getInstance();
-                msp.setName(simpleDateFormat.format(calendar.getTime()));
-                msp.setDescription(etNote.getText().toString());
-                msp.setCompare(etNote.getText().toString());
-                msp.setTitle(etTitle.getText().toString());
-                /*if(n==999999){
-                    msp.setFname(x);}
-                else {
-                    msp.setFname(n);
-                }*/
-                saveProduct();
-            }else {
-                Log.d(TAG, "onPause: aa");
-            }
+
+        if(!(a.equals(etTitle.getText().toString())&&b.equals(etNote.getText().toString()))) {
+            msp.setTitle(etTitle.getText().toString());
+            msp.setDescription(etNote.getText().toString());
+            DateFormat df = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
+            String date = df.format(Calendar.getInstance().getTime());
+            msp.setName(date);
         }
     }
 
-    private void SAVEPARENT(share msp){
-        Intent data = new Intent(this,MainActivity.class);
-        data.putExtra(share.class.getName(),msp);
-        startActivity(data);
+    private void SAVEPARENT(){
+        String str = etTitle.getText().toString();
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                if(!(a.equals(etTitle.getText().toString())&&b.equals(etNote.getText().toString()))) {
+                    msp.setTitle(etTitle.getText().toString());
+                    msp.setDescription(etNote.getText().toString());
+                    DateFormat df = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
+                    String date = df.format(Calendar.getInstance().getTime());
+                    msp.setName(date);
+                }
+                Intent data = new Intent();
+                data.putExtra("USER_TEXT", msp);
+                setResult(RESULT, data);
+                finish();
+            }
+        });
+        builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                share note = null;
+                Intent data = new Intent();
+                data.putExtra("USER_TEXT", note);
+                setResult(RESULT, data);
+                finish();
+            }
+        });
+        builder.setTitle("Your Note is not saved!");
+        builder.setMessage("Save note '"+str+ "'");
 
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
-    private void saveProduct() {
-
-        Log.d(TAG, "saveProduct: Saving JSON File");
-        try {
-            FileOutputStream fos = getApplicationContext().openFileOutput(getString(R.string.file_name), Context.MODE_PRIVATE);
-
-            JsonWriter writer = new JsonWriter(new OutputStreamWriter(fos, getString(R.string.encoding)));
-            writer.setIndent(" ");
-            writer.beginObject();
-           // writer.name("fname").value(msp.getFname());
-            writer.name("tvTime").value(msp.getName());
-            writer.name("etNode").value(msp.getDescription());
-            writer.name("compare").value(msp.getCompare());
-            writer.name("etTitle").value(msp.getTitle());
-            writer.endObject();
-            writer.close();
-            Toast.makeText(this, getString(R.string.saved), Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            e.getStackTrace();
-        }
-    }
 
 
-   @Override
+    @Override
     public void onBackPressed() {
-       if (msp.getTitle()==null || msp.getTitle()==""){
-           Intent data = new Intent(this,MainActivity.class);
-           startActivity(data);
-       }else{
-        SAVEPARENT(msp);
-       }
-        super.onBackPressed();
-    }
-    private void CHECK(){
-
-        if (msp.getTitle()!=null && !msp.getTitle().matches("")&& !etTitle.getText().toString().matches("")){
-            if(!(msp.getDescription().matches(msp.getCompare())) || !etNote.getText().toString().matches(msp.getDescription()) || !etTitle.getText().toString().matches(msp.getTitle())){
-                calendar = Calendar.getInstance();
-                msp.setName(simpleDateFormat.format(calendar.getTime()));
-                msp.setDescription(etNote.getText().toString());
-                msp.setCompare(etNote.getText().toString());
-                msp.setTitle(etTitle.getText().toString());
-                /*if(n==999999){
-                msp.setFname(x);}
-                else {
-                    msp.setFname(n);
-                }*/
-                Intent data = new Intent(this,MainActivity.class);
-                data.putExtra(share.class.getName(),msp);
-                startActivity(data);
-            }
-            else{
-                Log.d(TAG, "onPause: ");
-                Intent data = new Intent(this,MainActivity.class);
-                data.putExtra(share.class.getName(),msp);
-                startActivity(data);
-            }
+        if(!(a.equals(etTitle.getText().toString())&&b.equals(etNote.getText().toString()))) {
+            SAVEPARENT();
         }
-        else{
-            if (!etTitle.getText().toString().matches("")){
-                calendar = Calendar.getInstance();
-                msp.setName(simpleDateFormat.format(calendar.getTime()));
-                msp.setDescription(etNote.getText().toString());
-                msp.setCompare(etNote.getText().toString());
-                msp.setTitle(etTitle.getText().toString());
-                /*if(n==999999){
-                    msp.setFname(x);}
-                else {
-                    msp.setFname(n);
-                }*/
-                Intent data = new Intent(this,MainActivity.class);
-                data.putExtra(share.class.getName(),msp);
-                startActivity(data);
-            }else {
-                Toast.makeText(this,getString(R.string.no_title),Toast.LENGTH_SHORT).show();
-            }
+        else if(!etTitle.getText().toString().equals(Initial)||!etNote.getText().toString().equals(Initiale)){
+            SAVEPARENT();
+        }else{
+            super.onBackPressed();
+            finish();
         }
-
     }
 }

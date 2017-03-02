@@ -6,7 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.shertech.mynotes.eNode"
-    android:background="@android:color/holo_orange_light">
+    android:background="@color/colorPrimaryDark">
 
 
 
@@ -36,7 +36,7 @@
         app:layout_constraintRight_toRightOf="parent"
         android:layout_marginRight="16dp"
         app:layout_constraintHorizontal_bias="0.05"
-        android:textColor="@color/colorPrimaryDark"
+        android:textColor="@android:color/background_light"
         tools:text="dsfdsf"
         app:layout_constraintTop_toBottomOf="@+id/etTitle" />
 
@@ -52,7 +52,7 @@
         android:layout_marginRight="8dp"
         android:gravity="start|end"
         android:background="@android:color/background_dark"
-        android:textColor="@android:color/holo_orange_light"
+        android:textColor="@android:color/background_light"
         android:padding="8dp"
         android:layout_marginStart="8dp"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -86,6 +86,6 @@
         android:layout_marginLeft="16dp"
         android:hint="@string/tt"
         android:gravity="center_horizontal"
-        android:textColor="@color/colorPrimaryDark"
+        android:textColor="@android:color/background_light"
         android:textStyle="normal|bold" />
 </android.support.constraint.ConstraintLayout>

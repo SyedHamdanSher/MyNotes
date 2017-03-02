@@ -1,6 +1,9 @@
 package com.shertech.mynotes;
 
 import java.io.Serializable;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
 /**
  * Created by lastwalker on 2/16/17.
@@ -8,22 +11,42 @@ import java.io.Serializable;
 
 public class share implements Serializable{
 
+
     private String name;
     private String description;
     private String compare;
     private String title;
-    private int fname;
+    private int fname,ID;
 
-    share(){
+    share(int c){
         compare="";
-        name="";
         description="";
+        DateFormat df = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
+        String date = df.format(Calendar.getInstance().getTime());
         title="";
-        fname=999999;
+        name=date;
+        //fname=999999;
+        ID = c;
+    }
+    share(){}
+
+    share(int id,String title,String time,String notes){
+        compare="";
+        description=notes;
+        DateFormat df = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
+        String date = df.format(Calendar.getInstance().getTime());
+        this.title=title;
+        name=time;
+        //fname=999999;
+        ID = id;
     }
     public String getDescription() {
         return description;
     }
+    public void setID(int id) {
+        this.ID = id;
+    }
+    public int getID() { return ID;  }
 
     public void setDescription(String description) {
         this.description = description;
@@ -58,5 +81,10 @@ public class share implements Serializable{
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    @Override
+    public String toString() {
+        return title+"("+name+"),"+description;
     }
 }

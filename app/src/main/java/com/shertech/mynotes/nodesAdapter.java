@@ -22,7 +22,6 @@ public class nodesAdapter extends RecyclerView.Adapter<MyViewHolder> {
         this.noteList=nList;
         this.mainAct=ma;
     }
-
     @Override
     public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         Log.d(TAG, "onCreateViewHolder: MAKING NEW");
@@ -39,16 +38,22 @@ public class nodesAdapter extends RecyclerView.Adapter<MyViewHolder> {
     public void onBindViewHolder(MyViewHolder holder, int position) {
         share note = noteList.get(position);
         holder.tvTime.setText(note.getName());
-        if (note.getDescription().length()<80){
+        String s=note.getTitle().toString()+note.getName().toString()+note.getDescription().toString();
+        if (s.length()<80){
             holder.etNode.setText(note.getDescription());
         }else{
-        holder.etNode.setText(note.getDescription().substring(0,80)+"...");}
+            int n=note.getTitle().length()+note.getName().length();
+            n=80-n;
+            String m=note.getDescription().substring(0,n)+"...";
+            holder.etNode.setText(m);}
         holder.etTitle.setText(note.getTitle());
         holder.textView.setText(R.string.tvLU);
+
     }
 
     @Override
     public int getItemCount() {
         return noteList.size();
+
     }
 }

@@ -29,24 +29,28 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, View.OnLongClickListener{
 
+
     public List<share> noteList = new ArrayList<>();  // Main content is here
     private RecyclerView recyclerView; // Layout's recyclerview
     private nodesAdapter nAdapter; // Data to recyclerview adapter
-    //share s;
-    //displaynote d;
-    share msp;
+    public share msp=null;
+    public int notecheck = 1;
     private static final String TAG = "MainActivity";
-
-    AlertDialog dialog;
-    AlertDialog.Builder builder;
-
+    private static final int B_REQ = 1; private static final int RESULT = 2;
+    int counter=0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,45 +62,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         recyclerView.setAdapter(nAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        //d=new displaynote();
-        Intent intent = getIntent();
-        if (intent.hasExtra(share.class.getName())) {
-            msp = (share) intent.getSerializableExtra(share.class.getName());
-        }
-
-        builder = new AlertDialog.Builder(this);
-        builder.setMessage(R.string.dinfo);
-        builder.setTitle(R.string.infoT);
-        builder.setNegativeButton(R.string.ok, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-            return;
-            }
-        });
-        if (noteList.size()==0&&msp!=null){
-            new MyAsyncTask(this).execute();
-            noteList.add(0,msp);
-            nAdapter.notifyDataSetChanged();
-        }else {
-            List<share> flag=noteList;
-            new MyAsyncTask(this).execute();
-            if(msp!=null&&flag.size()!=0){
-            for(share x:flag){
-                noteList.add(0,x);
-            }
-            noteList.add(0,msp);
-            nAdapter.notifyDataSetChanged();}
-            else{
-                if(msp!=null){
-                    noteList.add(0,msp);
-                    nAdapter.notifyDataSetChanged();
-                }else{
-                    Log.d(TAG, "onCreate:ADSAD");
-                }
-            }
-        }
-
-
+        notecheck=0;
+        //msp = new share(1);
+        noteList.clear();
+        new AsyncLoaderTask(this).execute();
     }
 
     @Override
@@ -105,25 +74,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         inflater.inflate(R.menu.menu, menu);
         return true;
     }
-
     @Override
     protected void onResume() {
         super.onResume();
-
+        recyclerView.setAdapter(nAdapter);
     }
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
         switch (item.getItemId()) {
             case R.id.addNote:
-                Toast.makeText(this, "new note created", Toast.LENGTH_SHORT).show();
-                Intent in = new Intent(MainActivity.this, eNode.class).putExtra(share.class.getName(),new share());
-                startActivity(in);
+                counter++;
+                notecheck=1;
+                msp=null;
+                share msp = new share(counter);
+                Intent intent = new Intent(MainActivity.this, eNode.class);
+                intent.putExtra(share.class.getName(), msp);
+                startActivityForResult(intent, B_REQ);
                 return true;
             case R.id.dinfo:
-                dialog = builder.create();
-                dialog.show();
+                Intent ss = new Intent(MainActivity.this, ApplicationInformation.class);
+                startActivity(ss);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -133,159 +104,163 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onClick(View v) {
         int pos = recyclerView.getChildLayoutPosition(v);
-        Toast.makeText(v.getContext(),"u pressed:"+Integer.toString(pos),Toast.LENGTH_SHORT).show();
-        /*Intent intent = new Intent(MainActivity.this, eNode.class);
-        intent.putExtra();
-        startActivity(intent);*/
+        notecheck=1;
+        msp=null;
+        share m = noteList.get(pos);
+        Intent intent = new Intent(MainActivity.this, eNode.class);
+        intent.putExtra(share.class.getName(), m);
+        startActivityForResult(intent, B_REQ);
 
-        //Toast.makeText(v.getContext(), "SHORT " + s.toString(), Toast.LENGTH_SHORT).show();
+    }
+    @Override
+    protected void onPause() {
+        Collections.sort(noteList, noteComparator);
+        recyclerView.setAdapter(nAdapter);
+        if(noteList.size()!=0){
+            writeNotepad(noteList, this);}
+        super.onPause();
     }
 
     @Override
     public boolean onLongClick(View v) {
         int pos = recyclerView.getChildLayoutPosition(v);
-        share msp = noteList.get(pos);
-        Toast.makeText(v.getContext(), "LONG " + msp.toString(), Toast.LENGTH_SHORT).show();
-        return false;
+        cancel(pos);
+        return true;
     }
     public void setNoteList(List<share> NL){
-        noteList=NL;
-    }
+        if(NL!=null){
+        noteList.clear();
+        noteList.addAll(NL);
+            if(msp!=null){
+                if(!msp.getTitle().equals("")){
+                    int flag=0;
+                    for (int i = 0; i < noteList.size(); i++) {
+                        if (msp.getID() == noteList.get(i).getID()) {
+                        noteList.get(i).setTitle(msp.getTitle());
+                        noteList.get(i).setName(msp.getName());
+                        Log.d(TAG, "Updatedata:" + msp.getName()+":"+noteList.get(i).getName());
+                        noteList.get(i).setDescription(msp.getDescription());
+                        flag = 1;
+                        break;
+                        }
+                    }if (flag==0){
+                        noteList.add(msp);
+                    }
+                    Collections.sort(noteList, noteComparator);
+                    writeNotepad(noteList, this);
+                }
+                else
+                    Toast.makeText(this,R.string.no_file,Toast.LENGTH_SHORT).show();
+            }
+            recyclerView.setAdapter(nAdapter);
 
+            for(int i=0;i<noteList.size();i++)
+                if(counter<noteList.get(i).getID())
+                    counter = noteList.get(i).getID();
+
+            nAdapter.notifyDataSetChanged();
+
+        }else
+            Toast.makeText(this,R.string.no_file,Toast.LENGTH_SHORT).show();
+    }
     @Override
-    protected void onPause() {
-        super.onPause();
-        saveProduct();
-    }
-
-   /* @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == B_REQ) {
-            if (resultCode == RESULT_OK) {
+        if ( requestCode == B_REQ ) {
+            if ( resultCode == RESULT ) {
+                msp = (share) data.getSerializableExtra("USER_TEXT");
+                if (msp!= null && notecheck==1) {
+                    if (!msp.getTitle().equals("")) {
+                        int flag = 0;
+                        for (int i = 0; i < noteList.size(); i++) {
+                            if (msp.getID() == noteList.get(i).getID()) {
+                                noteList.get(i).setTitle(msp.getTitle());
+                                noteList.get(i).setName(msp.getName());
+                                noteList.get(i).setDescription(msp.getDescription());
+                                flag = 1;
+                                break;
+                            }
+                        }
+                        if (flag == 0) {
+                            noteList.add(msp);
+                        }
+                        Collections.sort(noteList, noteComparator);
+                        writeNotepad(noteList, this);
+                    }
+                    else
+                        Toast.makeText(this, getString(R.string.no_title), Toast.LENGTH_SHORT).show();
+                }
+                recyclerView.setAdapter(nAdapter);
+            } else {
                 Log.d(TAG, "onActivityResult: result Code: " + resultCode);
             }
-
         } else {
             Log.d(TAG, "onActivityResult: Request Code " + requestCode);
         }
-    }*/
-
-    private void saveProduct() {
-        Log.d(TAG, "saveProduct: Saving JSON File");
-        try {
-            FileOutputStream fos = getApplicationContext().openFileOutput(getString(R.string.file_name)+"1", Context.MODE_PRIVATE);
-            if(noteList!=null){
-                if(noteList.size()!=0){
-                    writeJsonStream(fos,noteList);
-                }else {
-                    Toast.makeText(this, getString(R.string.no_file), Toast.LENGTH_SHORT).show();
-                }
-
-            Toast.makeText(this, getString(R.string.count), Toast.LENGTH_SHORT).show();}
-            else {
-                Log.d(TAG, "saveProduct: ");
+    }
+    public void cancel(final int pos) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        share note = noteList.get(pos);
+        builder.setTitle("Delete note '"+note.getTitle()+"'?");
+        builder.setPositiveButton("YES", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                Log.d(TAG, "onActivityResult: yes  ");
+                noteList.remove(pos);
+                recyclerView.setAdapter(nAdapter);
             }
+        });
+        builder.setNegativeButton("NO", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+            }
+        });
+        share x = noteList.get(pos);
+        builder.setTitle("Delete note '"+x.getTitle()+"'");
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+    public static Comparator<share> noteComparator = new Comparator<share>() {
+
+        @Override
+        public int compare(share o1, share o2) {
+            Date start = null,end=null;
+            //DateFormat df = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z");
+            try {
+                start = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z").parse(o1.getName());
+                end = new SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z").parse(o2.getName());
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+            Log.d(TAG, "parseJSON: " + o1.getName());
+
+            return end.compareTo(start);
+        }
+
+    };
+    public void writeNotepad(List<share> qnotes, MainActivity ma) {
+        try {
+            FileOutputStream fos = ma.getApplicationContext().openFileOutput(getString(R.string.file_name1), Context.MODE_PRIVATE);
+            JsonWriter writer = new JsonWriter(new OutputStreamWriter(fos, ma.getString(R.string.encoding)));
+            writer.setIndent("  ");
+            writeMessagesArray(writer, qnotes);
+            writer.close();
         } catch (Exception e) {
             e.getStackTrace();
         }
     }
-    public void writeJsonStream(FileOutputStream out, List<share> noteList) throws IOException {
-            Log.d(TAG, "writeJsonStream: ");
-            JsonWriter writer = new JsonWriter(new OutputStreamWriter(out, getString(R.string.encoding)));
-            writer.setIndent("  ");
-            writeNoteArray(writer, noteList);
-            writer.close();
-    }
 
-    public void writeNoteArray(JsonWriter writer, List<share> noteList) throws IOException {
-            Log.d(TAG, "writeNoteArray: ");
-            writer.beginArray();
-            for (share note : noteList) {
-                writeNote(writer, note);
-            }
-            writer.endArray();
+    public void writeMessagesArray(JsonWriter writer, List<share> qnotes) throws
+            IOException {
+        writer.beginArray();
+        for ( share qnote :qnotes) {
+            writeMessage(writer, qnote);
+        }
+        writer.endArray();
     }
-
-    public void writeNote(JsonWriter writer, share note) throws IOException {
+    public void writeMessage(JsonWriter writer, share qNote) throws IOException {
         writer.beginObject();
-        writer.name("Title").value(note.getTitle());
-        writer.name("Name").value(note.getName());
-        writer.name("Description").value(note.getDescription());
+        writer.name("ID").value(qNote.getID());
+        writer.name("Title").value(qNote.getTitle());
+        writer.name("Name").value(qNote.getName());
+        writer.name("Description").value(qNote.getDescription());
         writer.endObject();
-        Log.d(TAG, "writeNote: ");
     }
-    class MyAsyncTask extends AsyncTask<List<share>,Void,List<share>> {
-        MainActivity ma;
-        List<share> NL;
-
-
-        MyAsyncTask(MainActivity ma) {
-            this.ma = ma;
-        }
-
-        @Override
-        protected List<share> doInBackground(List<share>... params) {
-            Log.d(TAG, "maloadFile: Loading JSON File");
-
-            try {
-                InputStream ss = getApplicationContext().openFileInput(getString(R.string.file_name) + "1");
-                NL = readJsonStream(ss);
-
-            } catch (FileNotFoundException e) {
-                Toast.makeText(ma.getApplicationContext(), getString(R.string.no_file), Toast.LENGTH_SHORT).show();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return NL;
-        }
-
-        public List<share> readJsonStream(InputStream in) throws IOException {
-            Log.d(TAG, "readJsonStream: ");
-            JsonReader reader = new JsonReader(new InputStreamReader(in, getString(R.string.encoding)));
-            try {
-                return readNoteArray(reader);
-            } finally {
-                reader.close();
-            }
-        }
-
-        public List<share> readNoteArray(JsonReader reader) throws IOException {
-            Log.d(TAG, "readNoteArray: ");
-            List<share> nL = new ArrayList<>();
-
-            reader.beginArray();
-            while (reader.hasNext()) {
-                nL.add(readMessage(reader));
-            }
-            reader.endArray();
-            return nL;
-        }
-        @Override
-        protected void onPostExecute(List<share> shares) {
-            ma.setNoteList(shares);
-        }
-
-        public share readMessage(JsonReader reader) throws IOException {
-            Log.d(TAG, "readMessage: ");
-            share s = new share();
-
-            reader.beginObject();
-            while (reader.hasNext()) {
-                String name = reader.nextName();
-                if (name.equals("name")) {
-                    s.setName(reader.nextString());
-                } else if (name.equals("Title")) {
-                    s.setTitle(reader.nextString());
-                } else if (name.equals("Description")) {
-                    s.setDescription(reader.nextString());
-                } else {
-                    reader.skipValue();
-                }
-            }
-            reader.endObject();
-            return s;
-        }
-    }
-
 }

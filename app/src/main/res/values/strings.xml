@@ -3,7 +3,8 @@
     <string name="btAdd">addNote</string>
     <string name="btInfo">device info</string>
     <string name="btSave">SAVE NOTE</string>
-    <string name="dinfo">Version 1.0 -- Created by : Syed Hamdan Sher -- Date : 02/26/2017</string>
+    <string name="dinfo">Version 1.0© 2017        Syed Hamdan Sher</string>
+    <string name="dinfo1">MyNote- A Multi-Note App</string>
     <string name="infoT">Application Information</string>
     <string name="ok">OK</string>
     <string name="tvLU">Last Updated :</string>
@@ -12,9 +13,10 @@
     <string name="tt">Enter title of your note</string>
     <string name="clear">Clear</string>
     <string name="file_name">Product.json</string>
+    <string name="file_name1">Product1.json</string>
     <string name="encoding">UTF-8</string>
     <string name="no_file">No Notes File Present</string>
     <string name="no_title">UNTITLED NOTE CANT SAVE</string>
-    <string name="saved">Note Saved</string>
+    <string name="saved">Note Saved backend</string>
     <string name="count">notelist Saved</string>
 </resources>
